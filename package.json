@@ -12,7 +12,8 @@
     "astro": "^5.13.5"
   },
   "devDependencies": {
-    "@astrojs/netlify": "^6.5.9"
+    "@astrojs/netlify": "^6.5.9",
+    "@astrojs/sitemap": "^3.5.1"
   },
   "engines": {
     "node": ">=18.14.1"
