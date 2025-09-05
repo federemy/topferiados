@@ -91,14 +91,21 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
     }
     @keyframes pop { from{ transform: translateX(-50%) scale(.9); opacity:0 } to{ transform: translateX(-50%) scale(1); opacity:1 } }
 
-    /* Skeletons por sección */
-    .skel {
-      display: block; width: 100%; height: 14px; border-radius: 8px;
-      background: linear-gradient(90deg,#f2f4f7,#e9eef4,#f2f4f7);
-      background-size: 200% 100%; animation: skel 1.1s infinite linear;
-    }
-    @keyframes skel { 0% {background-position: 200% 0} 100% {background-position: -200% 0} }
-    .skel-row { height: 18px; margin: 8px 0; }
+/* Skeletons más visibles */
+.skel{
+  display:block; width:100%; height:14px; border-radius:8px;
+  background: linear-gradient(90deg,#e3e8ef,#cbd5e1,#e3e8ef);
+  background-size:200% 100%;
+  animation: skel 1.1s infinite linear;
+}
+@keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skel-row{height:18px; margin:10px 0}
+
+/* Altura mínima mientras carga (listas/tabla/KPIs) */
+.loading-min { min-height: 160px; }          /* listas */
+.loading-min-table { min-height: 180px; }    /* tabla */
+.loading-min-kpi { min-height: 64px; }       /* KPIs */
+
   </style>
 </head>
 <body class="bg-light">
@@ -136,7 +143,7 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
       <div class="col-lg-6">
         <div class="card p-3 h-100">
           <h2 class="h5 mb-3">📅 Próximo feriado (¡a celebrar!)</h2>
-          <div id="nextKpi" class="row text-center">
+          <div id="nextKpi" class="row text-center loading-min-kpi">
             <div class="col-4"><div class="fw-bold fs-5" id="nextName">—</div><div class="text-muted">Nombre</div></div>
             <div class="col-4"><div class="fw-bold fs-5" id="nextDate">—</div><div class="text-muted">Fecha</div></div>
             <div class="col-4"><div class="fw-bold fs-5" id="daysLeft">—</div><div class="text-muted">Días</div></div>
@@ -148,7 +155,7 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
         <div class="card p-3 h-100">
           <h2 class="h5 mb-3">📊 Resumen — <span id="titleCountry">—</span> <span id="titleYear">{DEFAULT_YEAR}</span></h2>
           <!-- ✅ wrapper con id para loader -->
-          <div id="summaryKpi" class="row text-center">
+          <div id="summaryKpi" class="row text-center loading-min-kpi">
             <div class="col-4"><div class="fw-bold fs-5" id="totalHolidays">0</div><div class="text-muted">Feriados</div></div>
             <div class="col-4"><div class="fw-bold fs-5" id="passedCount">0</div><div class="text-muted">Pasaron</div></div>
             <div class="col-4"><div class="fw-bold fs-5" id="remainingCount">0</div><div class="text-muted">Faltan</div></div>
@@ -163,7 +170,7 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light"><tr><th style="width:260px;">Fecha</th><th>Nombre</th></tr></thead>
-          <tbody id="tbody"><tr><td colspan="2" class="text-muted">Tocá “Ver feriados” para empezar 👇</td></tr></tbody>
+          <tbody id="tbody" class="loading-min-table"><tr><td colspan="2" class="text-muted">Tocá “Ver feriados” para empezar 👇</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -173,13 +180,14 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
       <div class="col-lg-6">
         <div class="card p-3 h-100">
           <h2 class="h5 mb-3">🌎 Ranking por continente (<span id="selfCont">—</span>)</h2>
-          <ol id="rankSelfCont" class="list-group list-unstyled"></ol>
+          <ol id="rankSelfCont" class="list-group list-unstyled loading-min"></ol>
         </div>
       </div>
       <div class="col-lg-6">
         <div class="card p-3 h-100">
           <h2 class="h5 mb-3">🌐 Top 10 del mundo (+ tu país)</h2>
-          <ol id="rankWorld" class="list-group list-unstyled"></ol>
+          <ol id="rankWorld" class="list-group list-unstyled loading-min"></ol>
+
         </div>
       </div>
     </div>
@@ -357,51 +365,45 @@ const DEFAULT_YEAR = String(new Date().getFullYear());
 
     // ---- Loaders por sección ----
     function tableSkeleton(rows = 8) {
-      return `<tr><td colspan="2">
-        ${Array.from({length:rows}).map(()=>`<div class="skel skel-row"></div>`).join("")}
-      </td></tr>`;
-    }
+  return `<tr><td colspan="2">
+    ${Array.from({length:rows}).map(()=>`<div class="skel skel-row"></div>`).join("")}
+  </td></tr>`;
+}
 
-    function listSkeleton(items = 6) {
-      return Array.from({length:items}).map(()=>`
-        <li class="list-group-item">
-          <div class="skel" style="height:18px;"></div>
-          <div class="skel" style="height:10px; width:60%; margin-top:8px;"></div>
-        </li>
-      `).join("");
-    }
+function listSkeleton(items = 6) {
+  return Array.from({length:items}).map(()=>`
+    <li class="list-group-item">
+      <div class="skel" style="height:18px;"></div>
+      <div class="skel" style="height:10px; width:60%; margin-top:10px;"></div>
+    </li>
+  `).join("");
+}
 
-    function kpi3Skeleton() {
-      return `
-        <div class="col-4">
-          <div class="skel" style="height:26px;"></div>
-          <div class="skel" style="height:12px; margin-top:8px; width:70%;"></div>
-        </div>
-        <div class="col-4">
-          <div class="skel" style="height:26px;"></div>
-          <div class="skel" style="height:12px; margin-top:8px; width:70%;"></div>
-        </div>
-        <div class="col-4">
-          <div class="skel" style="height:26px;"></div>
-          <div class="skel" style="height:12px; margin-top:8px; width:70%;"></div>
-        </div>
-      `;
-    }
+function kpi3Skeleton() {
+  return `
+    <div class="col-4"><div class="skel" style="height:26px;"></div><div class="skel" style="height:12px; margin-top:8px; width:70%;"></div></div>
+    <div class="col-4"><div class="skel" style="height:26px;"></div><div class="skel" style="height:12px; margin-top:8px; width:70%;"></div></div>
+    <div class="col-4"><div class="skel" style="height:26px;"></div><div class="skel" style="height:12px; margin-top:8px; width:70%;"></div></div>
+  `;
+}
 
-    function setKpiLoading(on) {
-      const nextKpi = document.getElementById("nextKpi");
-      const summaryKpi = document.getElementById("summaryKpi");
-      if (!nextKpi || !summaryKpi) return;
-      if (on) {
-        if (!nextKpi._html) nextKpi._html = nextKpi.innerHTML;
-        if (!summaryKpi._html) summaryKpi._html = summaryKpi.innerHTML;
-        nextKpi.innerHTML = kpi3Skeleton();
-        summaryKpi.innerHTML = kpi3Skeleton();
-      } else {
-        if (nextKpi._html) nextKpi.innerHTML = nextKpi._html;
-        if (summaryKpi._html) summaryKpi.innerHTML = summaryKpi._html;
-      }
-    }
+function setKpiLoading(on) {
+  const nextKpi = document.getElementById("nextKpi");
+  const summaryKpi = document.getElementById("summaryKpi");
+  if (!nextKpi || !summaryKpi) return;
+  nextKpi.classList.toggle("loading-min-kpi", on);
+  summaryKpi.classList.toggle("loading-min-kpi", on);
+  if (on) {
+    if (!nextKpi._html) nextKpi._html = nextKpi.innerHTML;
+    if (!summaryKpi._html) summaryKpi._html = summaryKpi.innerHTML;
+    nextKpi.innerHTML = kpi3Skeleton();
+    summaryKpi.innerHTML = kpi3Skeleton();
+  } else {
+    if (nextKpi._html) nextKpi.innerHTML = nextKpi._html;
+    if (summaryKpi._html) summaryKpi.innerHTML = summaryKpi._html;
+  }
+}
+
 
     function setButtonLoading(on) {
       if (!els.load) return;
@@ -427,11 +429,16 @@ async function handleLoad() {
   els.titleYear.textContent = year;
 
   // Activo loaders por sección
-  setButtonLoading(true);
-  setKpiLoading(true);
-  els.tbody.innerHTML = tableSkeleton(8);
-  els.rankSelfCont.innerHTML = listSkeleton(6);
-  els.rankWorld.innerHTML   = listSkeleton(10);
+setButtonLoading(true);
+setKpiLoading(true);
+
+els.tbody.classList.add("loading-min-table");
+els.rankSelfCont.classList.add("loading-min");
+els.rankWorld.classList.add("loading-min");
+
+els.tbody.innerHTML = tableSkeleton(8);
+els.rankSelfCont.innerHTML = listSkeleton(6);
+els.rankWorld.innerHTML   = listSkeleton(10);
 
   try {
     const resp = await fetch(`/api/holidays.json?country=${code}&year=${year}&locale=${LOCALE}`);
@@ -458,6 +465,7 @@ async function handleLoad() {
 
     // ⚠️ APAGO loader de KPIs ANTES de escribir valores
     setKpiLoading(false);
+els.tbody.classList.remove("loading-min-table");
 
     // ✅ Re-tomo referencias porque cambiaron los nodos al restaurar el innerHTML
     els.nextName = document.querySelector("#nextName");
@@ -538,6 +546,7 @@ async function handleLoad() {
             <div class="progress"><div class="progress-bar" style="width:${pct}%"></div></div>
           </li>`;
       }).join("");
+      listEl.classList.remove("loading-min");
     }
 
     function renderWorldRanking(listEl, items, highlightCode, limit = 10){
@@ -561,6 +570,7 @@ async function handleLoad() {
           </li>
         `;
       }).join("");
+      listEl.classList.remove("loading-min");
     }
 
     // eventos
