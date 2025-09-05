@@ -1,5 +1,4 @@
 ---
-
 const LOCALE = "es-AR";
 const DEFAULT_YEAR = String(new Date().getFullYear());
 // Canonical dinámico (requiere "site" en astro.config.mjs)
@@ -91,21 +90,18 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
     }
     @keyframes pop { from{ transform: translateX(-50%) scale(.9); opacity:0 } to{ transform: translateX(-50%) scale(1); opacity:1 } }
 
-/* Skeletons más visibles */
-.skel{
-  display:block; width:100%; height:14px; border-radius:8px;
-  background: linear-gradient(90deg,#e3e8ef,#cbd5e1,#e3e8ef);
-  background-size:200% 100%;
-  animation: skel 1.1s infinite linear;
-}
-@keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.skel-row{height:18px; margin:10px 0}
-
-/* Altura mínima mientras carga (listas/tabla/KPIs) */
-.loading-min { min-height: 160px; }          /* listas */
-.loading-min-table { min-height: 180px; }    /* tabla */
-.loading-min-kpi { min-height: 64px; }       /* KPIs */
-
+    /* 🔄 Loader por sección (overlay) */
+    .section { position: relative; }
+    .section .section-loader {
+      position: absolute; inset: 0; z-index: 10;
+      display: none; /* se muestra con .loading */
+      align-items: center; justify-content: center; gap: 10px;
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(2px);
+      border-radius: inherit;
+    }
+    .section.loading .section-loader { display: flex; }
+    .section .spinner-border { width: 1.6rem; height: 1.6rem; }
   </style>
 </head>
 <body class="bg-light">
@@ -141,53 +137,66 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
     <!-- KPIs -->
     <div class="row g-3 mb-3">
       <div class="col-lg-6">
-        <div class="card p-3 h-100">
+        <div id="sec-next" class="card p-3 h-100 section">
           <h2 class="h5 mb-3">📅 Próximo feriado (¡a celebrar!)</h2>
-          <div id="nextKpi" class="row text-center loading-min-kpi">
+          <div id="nextKpi" class="row text-center">
             <div class="col-4"><div class="fw-bold fs-5" id="nextName">—</div><div class="text-muted">Nombre</div></div>
             <div class="col-4"><div class="fw-bold fs-5" id="nextDate">—</div><div class="text-muted">Fecha</div></div>
             <div class="col-4"><div class="fw-bold fs-5" id="daysLeft">—</div><div class="text-muted">Días</div></div>
           </div>
           <div id="todayBadge" class="badge bg-success-subtle text-success-emphasis mt-2 d-none">🎉 ¡Es hoy!</div>
+          <div class="section-loader" aria-hidden="true">
+            <div class="spinner-border" role="status"></div><span>Cargando…</span>
+          </div>
         </div>
       </div>
       <div class="col-lg-6">
-        <div class="card p-3 h-100">
+        <div id="sec-summary" class="card p-3 h-100 section">
           <h2 class="h5 mb-3">📊 Resumen — <span id="titleCountry">—</span> <span id="titleYear">{DEFAULT_YEAR}</span></h2>
-          <!-- ✅ wrapper con id para loader -->
-          <div id="summaryKpi" class="row text-center loading-min-kpi">
+          <div id="summaryKpi" class="row text-center">
             <div class="col-4"><div class="fw-bold fs-5" id="totalHolidays">0</div><div class="text-muted">Feriados</div></div>
             <div class="col-4"><div class="fw-bold fs-5" id="passedCount">0</div><div class="text-muted">Pasaron</div></div>
             <div class="col-4"><div class="fw-bold fs-5" id="remainingCount">0</div><div class="text-muted">Faltan</div></div>
+          </div>
+          <div class="section-loader" aria-hidden="true">
+            <div class="spinner-border" role="status"></div><span>Cargando…</span>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Tabla -->
-    <div class="card p-3 mb-3">
+    <div id="sec-table" class="card p-3 mb-3 section">
       <h2 class="h5 mb-3">🗂️ Lista de feriados</h2>
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light"><tr><th style="width:260px;">Fecha</th><th>Nombre</th></tr></thead>
-          <tbody id="tbody" class="loading-min-table"><tr><td colspan="2" class="text-muted">Tocá “Ver feriados” para empezar 👇</td></tr></tbody>
+          <tbody id="tbody"><tr><td colspan="2" class="text-muted">Tocá “Ver feriados” para empezar 👇</td></tr></tbody>
         </table>
+      </div>
+      <div class="section-loader" aria-hidden="true">
+        <div class="spinner-border" role="status"></div><span>Cargando…</span>
       </div>
     </div>
 
     <!-- Rankings -->
     <div class="row g-3">
       <div class="col-lg-6">
-        <div class="card p-3 h-100">
+        <div id="sec-cont" class="card p-3 h-100 section">
           <h2 class="h5 mb-3">🌎 Ranking por continente (<span id="selfCont">—</span>)</h2>
-          <ol id="rankSelfCont" class="list-group list-unstyled loading-min"></ol>
+          <ol id="rankSelfCont" class="list-group list-unstyled"></ol>
+          <div class="section-loader" aria-hidden="true">
+            <div class="spinner-border" role="status"></div><span>Cargando…</span>
+          </div>
         </div>
       </div>
       <div class="col-lg-6">
-        <div class="card p-3 h-100">
+        <div id="sec-world" class="card p-3 h-100 section">
           <h2 class="h5 mb-3">🌐 Top 10 del mundo (+ tu país)</h2>
-          <ol id="rankWorld" class="list-group list-unstyled loading-min"></ol>
-
+          <ol id="rankWorld" class="list-group list-unstyled"></ol>
+          <div class="section-loader" aria-hidden="true">
+            <div class="spinner-border" role="status"></div><span>Cargando…</span>
+          </div>
         </div>
       </div>
     </div>
@@ -207,11 +216,9 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
   <div id="celebration" aria-hidden="true"></div>
 
   <script type="module">
+    const LOCALE = "es-AR";
+    const DEFAULT_YEAR = String(new Date().getFullYear());
 
-    
-const LOCALE = "es-AR";
-const DEFAULT_YEAR = String(new Date().getFullYear());
-    
     const $ = (s) => document.querySelector(s);
     const els = {
       titleCountry: $("#titleCountry"), titleYear: $("#titleYear"),
@@ -224,11 +231,24 @@ const DEFAULT_YEAR = String(new Date().getFullYear());
       celebration: $("#celebration"),
     };
 
+    // 🔑 Secciones (tarjetas) para overlay
+    const sections = {
+      next:   document.getElementById("sec-next"),
+      summary:document.getElementById("sec-summary"),
+      table:  document.getElementById("sec-table"),
+      cont:   document.getElementById("sec-cont"),
+      world:  document.getElementById("sec-world"),
+    };
+    function setSectionLoading(key, on) {
+      const el = sections[key];
+      if (el) el.classList.toggle("loading", !!on);
+    }
+
     const SAFE_TZ = "UTC";
     const state = {
       countries: [],
       continents: [],
-      selected: { code: "AR", year: {DEFAULT_YEAR} },
+      selected: { code: "AR", year: DEFAULT_YEAR },
       celebrateTimer: null,
     };
 
@@ -359,51 +379,24 @@ const DEFAULT_YEAR = String(new Date().getFullYear());
 
     function getSelection() {
       const code = (els.country && els.country.value) || state.selected.code || "AR";
-      const year = (els.year && els.year.value) || state.selected.year || {DEFAULT_YEAR};
+      const year = (els.year && els.year.value) || state.selected.year || DEFAULT_YEAR;
       return { code, year };
     }
 
-    // ---- Loaders por sección ----
+    // (skeleton helpers que podés seguir usando si querés)
     function tableSkeleton(rows = 8) {
-  return `<tr><td colspan="2">
-    ${Array.from({length:rows}).map(()=>`<div class="skel skel-row"></div>`).join("")}
-  </td></tr>`;
-}
-
-function listSkeleton(items = 6) {
-  return Array.from({length:items}).map(()=>`
-    <li class="list-group-item">
-      <div class="skel" style="height:18px;"></div>
-      <div class="skel" style="height:10px; width:60%; margin-top:10px;"></div>
-    </li>
-  `).join("");
-}
-
-function kpi3Skeleton() {
-  return `
-    <div class="col-4"><div class="skel" style="height:26px;"></div><div class="skel" style="height:12px; margin-top:8px; width:70%;"></div></div>
-    <div class="col-4"><div class="skel" style="height:26px;"></div><div class="skel" style="height:12px; margin-top:8px; width:70%;"></div></div>
-    <div class="col-4"><div class="skel" style="height:26px;"></div><div class="skel" style="height:12px; margin-top:8px; width:70%;"></div></div>
-  `;
-}
-
-function setKpiLoading(on) {
-  const nextKpi = document.getElementById("nextKpi");
-  const summaryKpi = document.getElementById("summaryKpi");
-  if (!nextKpi || !summaryKpi) return;
-  nextKpi.classList.toggle("loading-min-kpi", on);
-  summaryKpi.classList.toggle("loading-min-kpi", on);
-  if (on) {
-    if (!nextKpi._html) nextKpi._html = nextKpi.innerHTML;
-    if (!summaryKpi._html) summaryKpi._html = summaryKpi.innerHTML;
-    nextKpi.innerHTML = kpi3Skeleton();
-    summaryKpi.innerHTML = kpi3Skeleton();
-  } else {
-    if (nextKpi._html) nextKpi.innerHTML = nextKpi._html;
-    if (summaryKpi._html) summaryKpi.innerHTML = summaryKpi._html;
-  }
-}
-
+      return `<tr><td colspan="2">
+        ${Array.from({length:rows}).map(()=>`<div class="skel skel-row"></div>`).join("")}
+      </td></tr>`;
+    }
+    function listSkeleton(items = 6) {
+      return Array.from({length: items}).map(() => `
+        <li class="list-group-item">
+          <div class="skel" style="height:18px; margin-bottom:6px;"></div>
+          <div class="skel" style="height:10px; width:60%;"></div>
+        </li>
+      `).join("");
+    }
 
     function setButtonLoading(on) {
       if (!els.load) return;
@@ -422,110 +415,99 @@ function setKpiLoading(on) {
       }
     }
 
-async function handleLoad() {
-  const { code, year } = getSelection();
-  state.selected = { code, year };
-  els.titleCountry.textContent = codeToName(code);
-  els.titleYear.textContent = year;
+    async function handleLoad() {
+      const { code, year } = getSelection();
+      state.selected = { code, year };
+      els.titleCountry.textContent = codeToName(code);
+      els.titleYear.textContent = year;
 
-  // Activo loaders por sección
-setButtonLoading(true);
-setKpiLoading(true);
+      // 🔛 ON por sección
+      setButtonLoading(true);
+      setSectionLoading("next", true);
+      setSectionLoading("summary", true);
+      setSectionLoading("table", true);
+      setSectionLoading("cont", true);
+      setSectionLoading("world", true);
 
-els.tbody.classList.add("loading-min-table");
-els.rankSelfCont.classList.add("loading-min");
-els.rankWorld.classList.add("loading-min");
+      try {
+        const resp = await fetch(`/api/holidays.json?country=${code}&year=${year}&locale=${LOCALE}`);
+        const data = await resp.json();
 
-els.tbody.innerHTML = tableSkeleton(8);
-els.rankSelfCont.innerHTML = listSkeleton(6);
-els.rankWorld.innerHTML   = listSkeleton(10);
+        if (data.mode !== "live") {
+          els.apiMode.textContent = "🔌 Fuente: Nager.Date (ups)";
+          if (data.error) els.apiMode.title = String(data.error);
+          els.tbody.innerHTML = `<tr><td colspan="2" class="text-danger">Uy… no pudimos traer los feriados ahora 😕. Probá más tarde.</td></tr>`;
+          els.totalHolidays.textContent = "0";
+          els.passedCount.textContent = "0";
+          els.remainingCount.textContent = "0";
+          els.nextName.textContent = "—"; els.nextDate.textContent = "—"; els.daysLeft.textContent = "—";
+          els.todayBadge && els.todayBadge.classList.add("d-none");
+          els.rankSelfCont.innerHTML = `<li class="list-group-item text-muted">Sin datos por acá… 🤷‍♀️</li>`;
+          els.rankWorld.innerHTML    = `<li class="list-group-item text-muted">Nada por aquí todavía 👀</li>`;
+          ["next","summary","table","cont","world"].forEach(k => setSectionLoading(k, false));
+          return;
+        }
 
-  try {
-    const resp = await fetch(`/api/holidays.json?country=${code}&year=${year}&locale=${LOCALE}`);
-    const data = await resp.json();
+        els.apiMode.textContent = "🔌 Fuente: Nager.Date (en vivo)";
+        els.apiMode.removeAttribute("title");
 
-    if (data.mode !== "live") {
-      els.apiMode.textContent = "🔌 Fuente: Nager.Date (ups)";
-      if (data.error) els.apiMode.title = String(data.error);
-      els.tbody.innerHTML = `<tr><td colspan="2" class="text-danger">Uy… no pudimos traer los feriados ahora 😕. Probá más tarde.</td></tr>`;
-      els.totalHolidays.textContent = "0";
-      els.passedCount.textContent = "0";
-      els.remainingCount.textContent = "0";
-      els.nextName.textContent = "—"; els.nextDate.textContent = "—"; els.daysLeft.textContent = "—";
-      els.todayBadge && els.todayBadge.classList.add("d-none");
-      els.rankSelfCont.innerHTML = `<li class="list-group-item text-muted">Sin datos por acá… 🤷‍♀️</li>`;
-      els.rankWorld.innerHTML    = `<li class="list-group-item text-muted">Nada por aquí todavía 👀</li>`;
-      return;
+        const { holidays = [], total = 0 } = data;
+
+        // KPIs
+        const today = todayISO();
+        const passed = holidays.filter(h => h.dateISO < today).length;
+        // Apagá overlays de KPIs ANTES de escribir
+        setSectionLoading("summary", false);
+        setSectionLoading("next", false);
+
+        els.totalHolidays.textContent = String(total);
+        els.passedCount.textContent = String(passed);
+        els.remainingCount.textContent = String(Math.max(0, total - passed));
+
+        const next = computeNext(holidays);
+        if (next) {
+          els.nextName.textContent = next.holiday.name;
+          els.nextDate.textContent = fmtDate(next.holiday.dateISO);
+          els.daysLeft.textContent = String(next.daysLeft);
+          const isToday = next.daysLeft === 0;
+          els.todayBadge && els.todayBadge.classList.toggle("d-none", !isToday);
+          if (isToday) startCelebration(true);
+          else if (next.daysLeft <= 2) startCelebration(false);
+          else stopCelebration();
+        } else {
+          els.nextName.textContent = "—"; els.nextDate.textContent = "—"; els.daysLeft.textContent = "—";
+          els.todayBadge && els.todayBadge.classList.add("d-none");
+          stopCelebration();
+        }
+
+        // Tabla
+        els.tbody.innerHTML = tableSkeleton(8); // opcional mientras calcula
+        renderTable(holidays);
+        setSectionLoading("table", false);
+
+        // Rankings
+        const cont = getContinent(code);
+        els.selfCont.textContent = cont || "—";
+
+        const worldCodes = getAllCodes();
+        const pSelf = cont
+          ? fetch(`/api/ranking.json?countries=${encodeURIComponent(getCountriesByContinent(cont).join(","))}&year=${year}&locale=${LOCALE}`)
+              .then(r=>r.json())
+              .then(j => renderRanking(els.rankSelfCont, j.results, code))
+              .finally(() => setSectionLoading("cont", false))
+          : (els.rankSelfCont.innerHTML = `<li class="list-group-item text-muted">No tenemos continente mapeado 🙈</li>`, setSectionLoading("cont", false), Promise.resolve());
+
+        const pWorld = fetch(`/api/ranking.json?countries=${encodeURIComponent(worldCodes.join(","))}&year=${year}&locale=${LOCALE}&limit=10&include=${code}`)
+          .then(r=>r.json())
+          .then(j => renderWorldRanking(els.rankWorld, j.results, code, 10))
+          .finally(() => setSectionLoading("world", false));
+
+        await Promise.all([pSelf, pWorld]);
+
+      } finally {
+        setButtonLoading(false);
+      }
     }
-
-    els.apiMode.textContent = "🔌 Fuente: Nager.Date (en vivo)";
-    els.apiMode.removeAttribute("title");
-
-    const { holidays = [], total = 0 } = data;
-
-    // ⚠️ APAGO loader de KPIs ANTES de escribir valores
-    setKpiLoading(false);
-els.tbody.classList.remove("loading-min-table");
-
-    // ✅ Re-tomo referencias porque cambiaron los nodos al restaurar el innerHTML
-    els.nextName = document.querySelector("#nextName");
-    els.nextDate = document.querySelector("#nextDate");
-    els.daysLeft = document.querySelector("#daysLeft");
-    els.todayBadge = document.querySelector("#todayBadge");
-    els.totalHolidays = document.querySelector("#totalHolidays");
-    els.passedCount = document.querySelector("#passedCount");
-    els.remainingCount = document.querySelector("#remainingCount");
-
-    // KPIs resumen
-    const today = todayISO();
-    const passed = holidays.filter(h => h.dateISO < today).length;
-    els.totalHolidays.textContent = String(total);
-    els.passedCount.textContent = String(passed);
-    els.remainingCount.textContent = String(Math.max(0, total - passed));
-
-    // Próximo feriado
-    const next = computeNext(holidays);
-    if (next) {
-      els.nextName.textContent = next.holiday.name;
-      els.nextDate.textContent = fmtDate(next.holiday.dateISO);
-      els.daysLeft.textContent = String(next.daysLeft);
-      const isToday = next.daysLeft === 0;
-      els.todayBadge && els.todayBadge.classList.toggle("d-none", !isToday);
-      if (isToday) startCelebration(true);
-      else if (next.daysLeft <= 2) startCelebration(false);
-      else stopCelebration();
-    } else {
-      els.nextName.textContent = "—"; els.nextDate.textContent = "—"; els.daysLeft.textContent = "—";
-      els.todayBadge && els.todayBadge.classList.add("d-none");
-      stopCelebration();
-    }
-
-    // Tabla
-    renderTable(holidays);
-
-    // Rankings (pueden quedar con skeleton hasta que terminen)
-    const cont = getContinent(code);
-    els.selfCont.textContent = cont || "—";
-
-    const worldCodes = getAllCodes();
-    const pSelf = cont
-      ? fetch(`/api/ranking.json?countries=${encodeURIComponent(getCountriesByContinent(cont).join(","))}&year=${year}&locale=${LOCALE}`)
-          .then(r=>r.json()).then(j=>renderRanking(els.rankSelfCont, j.results, code))
-          .catch(()=> els.rankSelfCont.innerHTML = `<li class="list-group-item text-muted">Sin datos por acá… 🤷‍♀️</li>`)
-      : (els.rankSelfCont.innerHTML = `<li class="list-group-item text-muted">No tenemos continente mapeado 🙈</li>`, Promise.resolve());
-
-    const pWorld = fetch(`/api/ranking.json?countries=${encodeURIComponent(worldCodes.join(","))}&year=${year}&locale=${LOCALE}&limit=10&include=${code}`)
-      .then(r=>r.json()).then(j=>renderWorldRanking(els.rankWorld, j.results, code, 10))
-      .catch(()=> els.rankWorld.innerHTML = `<li class="list-group-item text-muted">Nada por aquí todavía 👀</li>`);
-
-    await Promise.all([pSelf, pWorld]);
-
-  } finally {
-    setButtonLoading(false);
-    // (los loaders de tabla/rankings se apagan dentro de sus renderizadores)
-  }
-}
-
 
     function renderRanking(listEl, items, highlight){
       if(!items?.length){
@@ -546,7 +528,6 @@ els.tbody.classList.remove("loading-min-table");
             <div class="progress"><div class="progress-bar" style="width:${pct}%"></div></div>
           </li>`;
       }).join("");
-      listEl.classList.remove("loading-min");
     }
 
     function renderWorldRanking(listEl, items, highlightCode, limit = 10){
@@ -570,7 +551,6 @@ els.tbody.classList.remove("loading-min-table");
           </li>
         `;
       }).join("");
-      listEl.classList.remove("loading-min");
     }
 
     // eventos
