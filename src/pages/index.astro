@@ -92,21 +92,9 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
       }
       @keyframes pop { from{ transform: translateX(-50%) scale(.9); opacity:0 } to{ transform: translateX(-50%) scale(1); opacity:1 } }
       /* Loader global (overlay) */
-#globalLoader {
-  position: fixed; inset: 0; z-index: 1050; /* arriba de todo */
-  background: rgba(255,255,255,.6);
-  backdrop-filter: blur(2px);
-  display: none; align-items: center; justify-content: center;
-}
-#globalLoader.show { display: flex; }
-#globalLoader .box {
-  background: #fff; border: 1px solid #eee; border-radius: 16px;
-  padding: 16px 18px; box-shadow: 0 10px 30px rgba(0,0,0,.08);
-  display: flex; align-items: center; gap: 12px;
-  font-weight: 700; color: #0b1220;
-}
 
-/* Placeholders (skeletons) para listas/tablas */
+
+/* Skeletons por sección */
 .skel {
   display: block; width: 100%; height: 14px; border-radius: 8px;
   background: linear-gradient(90deg,#f2f4f7,#e9eef4,#f2f4f7);
@@ -153,9 +141,11 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
           <div class="card p-3 h-100">
             <h2 class="h5 mb-3">📅 Próximo feriado (¡a celebrar!)</h2>
             <div class="row text-center">
+              <div id="nextKpi" class="row text-center">
               <div class="col-4"><div class="fw-bold fs-5" id="nextName">—</div><div class="text-muted">Nombre</div></div>
               <div class="col-4"><div class="fw-bold fs-5" id="nextDate">—</div><div class="text-muted">Fecha</div></div>
               <div class="col-4"><div class="fw-bold fs-5" id="daysLeft">—</div><div class="text-muted">Días</div></div>
+              </div>
             </div>
             <div id="todayBadge" class="badge bg-success-subtle text-success-emphasis mt-2 d-none">🎉 ¡Es hoy!</div>
           </div>
@@ -164,9 +154,12 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
           <div class="card p-3 h-100">
             <h2 class="h5 mb-3">📊 Resumen — <span id="titleCountry">—</span> <span id="titleYear">{DEFAULT_YEAR}</span></h2>
             <div class="row text-center">
+              
+              <div id="nextKpi" class="row text-center"></div>
               <div class="col-4"><div class="fw-bold fs-5" id="totalHolidays">0</div><div class="text-muted">Feriados</div></div>
               <div class="col-4"><div class="fw-bold fs-5" id="passedCount">0</div><div class="text-muted">Pasaron</div></div>
               <div class="col-4"><div class="fw-bold fs-5" id="remainingCount">0</div><div class="text-muted">Faltan</div></div>
+            </div>
             </div>
           </div>
         </div>
@@ -198,13 +191,7 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
           </div>
         </div>
       </div>
-      <!-- Loader global -->
-<div id="globalLoader" role="status" aria-live="polite" aria-label="Cargando datos">
-  <div class="box">
-    <div class="spinner-border" role="status" aria-hidden="true"></div>
-    <span>Cargando datos…</span>
-  </div>
-</div>
+
 
     </main>
 
@@ -379,15 +366,9 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
         const year = (els.year && els.year.value) || state.selected.year || "{DEFAULT_YEAR}";
         return { code, year };
       }
-function setGlobalLoading(on) {
-  const overlay = document.getElementById("globalLoader");
-  if (!overlay) return;
-  overlay.classList.toggle("show", !!on);
-  // bloquear controles
-  [els.country, els.year, els.load].forEach(el => el && (el.disabled = !!on));
-}
 
-function tableSkeleton(rows = 6) {
+// ---- Loaders por sección ----
+function tableSkeleton(rows = 8) {
   return `<tr><td colspan="2">
     ${Array.from({length:rows}).map(()=>`<div class="skel skel-row"></div>`).join("")}
   </td></tr>`;
@@ -401,6 +382,43 @@ function listSkeleton(items = 6) {
     </li>
   `).join("");
 }
+
+function kpi3Skeleton() {
+  // tres columnas (igual al layout de KPIs)
+  return `
+    <div class="col-4">
+      <div class="skel" style="height:26px;"></div>
+      <div class="skel" style="height:12px; margin-top:8px; width:70%;"></div>
+    </div>
+    <div class="col-4">
+      <div class="skel" style="height:26px;"></div>
+      <div class="skel" style="height:12px; margin-top:8px; width:70%;"></div>
+    </div>
+    <div class="col-4">
+      <div class="skel" style="height:26px;"></div>
+      <div class="skel" style="height:12px; margin-top:8px; width:70%;"></div>
+    </div>
+  `;
+}
+
+function setKpiLoading(on) {
+  const nextKpi = document.getElementById("nextKpi");
+  const summaryKpi = document.getElementById("summaryKpi");
+  if (!nextKpi || !summaryKpi) return;
+
+  if (on) {
+    // guardamos contenido original para restaurar
+    if (!nextKpi._html) nextKpi._html = nextKpi.innerHTML;
+    if (!summaryKpi._html) summaryKpi._html = summaryKpi.innerHTML;
+    nextKpi.innerHTML = kpi3Skeleton();
+    summaryKpi.innerHTML = kpi3Skeleton();
+  } else {
+    if (nextKpi._html) nextKpi.innerHTML = nextKpi._html;
+    if (summaryKpi._html) summaryKpi.innerHTML = summaryKpi._html;
+  }
+}
+
+// Spinner del botón (ya que lo pediste por sección también)
 function setButtonLoading(on) {
   if (!els.load) return;
   if (on) {
@@ -418,6 +436,7 @@ function setButtonLoading(on) {
   }
 }
 
+
 async function handleLoad(){
   const { code, year } = getSelection();
   state.selected = { code, year };
@@ -426,7 +445,12 @@ async function handleLoad(){
 
   // ⬇️ activar loaders
   setButtonLoading(true);   
-  setGlobalLoading(true);
+  // ⬇️ loaders por sección
+  setButtonLoading(true);
+  setKpiLoading(true);
+  els.tbody.innerHTML = tableSkeleton(8);
+  els.rankSelfCont.innerHTML = listSkeleton(6);
+  els.rankWorld.innerHTML   = listSkeleton(10);
   els.tbody.innerHTML = tableSkeleton(8);
   els.rankSelfCont.innerHTML = listSkeleton(6);
   els.rankWorld.innerHTML   = listSkeleton(10);
@@ -448,7 +472,7 @@ async function handleLoad(){
       // rankings vacíos si falló
       els.rankSelfCont.innerHTML = `<li class="list-group-item text-muted">Sin datos por acá… 🤷‍♀️</li>`;
       els.rankWorld.innerHTML    = `<li class="list-group-item text-muted">Nada por aquí todavía 👀</li>`;
-      return;
+       return;
     }
 
     els.apiMode.textContent = "🔌 Fuente: Nager.Date (en vivo)";
@@ -498,8 +522,8 @@ async function handleLoad(){
 
   } finally {
     // ⬇️ desactivar loader global siempre
-    setGlobalLoading(false);
-        setButtonLoading(false);     // ⬅️ spinner OFF
+    setKpiLoading(false);
+    setButtonLoading(false);     // ⬅️ spinner OFF
 
   }
 }
