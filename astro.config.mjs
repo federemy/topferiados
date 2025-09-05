@@ -1,5 +1,9 @@
-// @ts-check
+// astro.config.mjs
 import { defineConfig } from 'astro/config';
+import netlify from '@astrojs/netlify';
 
-// https://astro.build/config
-export default defineConfig({});
+export default defineConfig({
+  output: 'server',
+  adapter: netlify(),
+  // site: 'https://tu-sitio.netlify.app', // (opcional, útil para URLs absolutas)
+});

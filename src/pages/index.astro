@@ -1,11 +1,430 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+// src/pages/feriados.astro
+const LOCALE = "es-AR";
+const DEFAULT_YEAR = String(new Date().getFullYear());
 ---
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Descubrí cuando es el próximo feriado!</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="theme-color" content="#ffd166">
+    <meta name="description" content="Elegí tu país y año. Te contamos el próximo feriado, cuántos faltan y el ranking por continente y mundial." />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet" />
+    <style>
+      :root{ --grad: linear-gradient(90deg,#ff6b6b,#ffd166,#4ecdc4,#a78bfa); }
+      body{ font-family:"Nunito",system-ui,-apple-system,Segoe UI,Roboto,Arial; }
+      .hero{ background: var(--grad); color:#0b1220; }
+      .card{ border-radius:16px }
+      .progress{ height:10px; border-radius:8px }
+      .badge-soft{ background:#f8fafc; color:#64748b; border:1px solid #e2e8f0 }
 
-<Layout>
-	<Welcome />
-</Layout>
+      /* 🎉 Overlay de celebración */
+      #celebration {
+        position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+        display: none;
+      }
+      #celebration.show { display: block; }
+      .cele-emoji {
+        position: absolute; font-size: clamp(24px, 4vw, 42px); line-height: 1; will-change: transform, opacity;
+        animation: celeFloat var(--dur,6s) ease-in forwards;
+        filter: drop-shadow(0 2px 2px rgba(0,0,0,.15));
+      }
+      @keyframes celeFloat {
+        0%   { transform: translateY(10vh) scale(.8) rotate(0); opacity:0; }
+        10%  { opacity: 1; }
+        100% { transform: translateY(-110vh) scale(1.2) rotate(540deg); opacity:0; }
+      }
+      .cele-banner {
+        position: absolute; left:50%; top:14%;
+        transform: translateX(-50%);
+        background: rgba(255,255,255,.85);
+        border: 2px solid rgba(0,0,0,.06);
+        border-radius: 999px; padding: 10px 18px; font-weight: 800;
+        color:#0b1220; text-shadow: 0 1px 0 #fff;
+        box-shadow: 0 10px 30px rgba(0,0,0,.08);
+        animation: pop 500ms ease-out;
+      }
+      @keyframes pop { from{ transform: translateX(-50%) scale(.9); opacity:0 } to{ transform: translateX(-50%) scale(1); opacity:1 } }
+    </style>
+  </head>
+  <body class="bg-light">
+    <section class="hero py-4 mb-3">
+      <div class="container">
+        <h1 class="display-6 fw-bold">🎊 Calendario de Feriados</h1>
+        <p class="mb-0">Elegí tu país y el año. Te contamos el próximo feriado, cuántos faltan y quién manda en el ranking 😉.</p>
+      </div>
+    </section>
+
+    <main class="container pb-5">
+      <!-- Controles -->
+      <div class="card p-3 mb-3">
+        <h2 class="h5 mb-3">🎯 Arranquemos</h2>
+        <div class="row g-2 align-items-end">
+          <div class="col-md-6 col-lg-5">
+            <label class="form-label">País</label>
+            <select id="country" class="form-select"></select>
+          </div>
+          <div class="col-md-3 col-lg-2">
+            <label class="form-label">Año</label>
+            <input id="year" type="number" min="2001" max="2100" value={DEFAULT_YEAR} class="form-control" />
+          </div>
+          <div class="col-md-3 col-lg-3 d-grid">
+            <button id="load" class="btn btn-primary">✨ Ver feriados</button>
+          </div>
+        </div>
+        <div class="mt-2">
+          <span id="apiMode" class="badge badge-soft">🔌 Fuente: —</span>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="row g-3 mb-3">
+        <div class="col-lg-6">
+          <div class="card p-3 h-100">
+            <h2 class="h5 mb-3">📅 Próximo feriado (¡a celebrar!)</h2>
+            <div class="row text-center">
+              <div class="col-4"><div class="fw-bold fs-5" id="nextName">—</div><div class="text-muted">Nombre</div></div>
+              <div class="col-4"><div class="fw-bold fs-5" id="nextDate">—</div><div class="text-muted">Fecha</div></div>
+              <div class="col-4"><div class="fw-bold fs-5" id="daysLeft">—</div><div class="text-muted">Días</div></div>
+            </div>
+            <div id="todayBadge" class="badge bg-success-subtle text-success-emphasis mt-2 d-none">🎉 ¡Es hoy!</div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card p-3 h-100">
+            <h2 class="h5 mb-3">📊 Resumen — <span id="titleCountry">—</span> <span id="titleYear">{DEFAULT_YEAR}</span></h2>
+            <div class="row text-center">
+              <div class="col-4"><div class="fw-bold fs-5" id="totalHolidays">0</div><div class="text-muted">Feriados</div></div>
+              <div class="col-4"><div class="fw-bold fs-5" id="passedCount">0</div><div class="text-muted">Pasaron</div></div>
+              <div class="col-4"><div class="fw-bold fs-5" id="remainingCount">0</div><div class="text-muted">Faltan</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="card p-3 mb-3">
+        <h2 class="h5 mb-3">🗂️ Lista de feriados</h2>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light"><tr><th style="width:260px;">Fecha</th><th>Nombre</th></tr></thead>
+            <tbody id="tbody"><tr><td colspan="2" class="text-muted">Tocá “Ver feriados” para empezar 👇</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Rankings -->
+      <div class="row g-3">
+        <div class="col-lg-6">
+          <div class="card p-3 h-100">
+            <h2 class="h5 mb-3">🌎 Ranking por continente (<span id="selfCont">—</span>)</h2>
+            <ol id="rankSelfCont" class="list-group list-unstyled"></ol>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card p-3 h-100">
+            <h2 class="h5 mb-3">🌐 Top 10 del mundo (+ tu país)</h2>
+            <ol id="rankWorld" class="list-group list-unstyled"></ol>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 🎉 Overlay de celebración -->
+    <div id="celebration" aria-hidden="true"></div>
+
+    <script type="module">
+      const $ = (s) => document.querySelector(s);
+      const els = {
+        titleCountry: $("#titleCountry"), titleYear: $("#titleYear"),
+        country: $("#country"), year: $("#year"), load: $("#load"),
+        tbody: $("#tbody"),
+        nextName: $("#nextName"), nextDate: $("#nextDate"), daysLeft: $("#daysLeft"), todayBadge: $("#todayBadge"),
+        totalHolidays: $("#totalHolidays"), passedCount: $("#passedCount"), remainingCount: $("#remainingCount"),
+        apiMode: $("#apiMode"),
+        selfCont: $("#selfCont"), rankSelfCont: $("#rankSelfCont"), rankWorld: $("#rankWorld"),
+        celebration: $("#celebration"),
+      };
+
+      const SAFE_TZ = "UTC";
+      const LOCALE = "{LOCALE}";
+
+      const state = {
+        countries: [],
+        continents: [],
+        selected: { code: "AR", year: "{DEFAULT_YEAR}" },
+        celebrateTimer: null,
+      };
+
+      function parseISO(d){ return new Date(d+"T00:00:00"); }
+      function fmtDate(iso){
+        const d = parseISO(iso);
+        try { return d.toLocaleDateString("es-AR", { weekday:"long", day:"2-digit", month:"long", year:"numeric", timeZone: SAFE_TZ }); }
+        catch { return d.toLocaleDateString(undefined, { weekday:"long", day:"2-digit", month:"long", year:"numeric" }); }
+      }
+      function todayISO(){ const n=new Date(); return `${n.getUTCFullYear()}-${String(n.getUTCMonth()+1).padStart(2,"0")}-${String(n.getUTCDate()).padStart(2,"0")}`; }
+      function daysBetween(aISO,bISO){ const ms=86400000,a=parseISO(aISO),b=parseISO(bISO); return Math.round((b-a)/ms); }
+      function codeToName(code){ return state.countries.find(c=>c.code===code)?.name || code; }
+      function getContinent(code){ return state.countries.find(c=>c.code===code)?.continent; }
+      function getCountriesByContinent(cont){ return state.countries.filter(c=>c.continent===cont).map(c=>c.code); }
+      function getAllCodes(){ return state.countries.map(c=>c.code); }
+
+      async function loadMeta(){
+        let merged = [], continents = ["Americas","Europe","Asia","Africa","Oceania"];
+        try {
+          const r = await fetch("/api/continents.json");
+          if (r.ok) {
+            const data = await r.json();
+            merged = data.countries ?? [];
+            continents = data.continents ?? continents;
+          }
+        } catch {}
+        if (merged.length < 120) {
+          try {
+            const rc = await fetch("https://restcountries.com/v3.1/all?fields=cca2,region,name");
+            if (rc.ok) {
+              const arr = await rc.json();
+              const allowed = new Set(["Americas","Europe","Asia","Africa","Oceania"]);
+              const seen = new Set(merged.map(c=>c.code));
+              for (const it of arr) {
+                const code = String(it.cca2 || "").toUpperCase();
+                const name = it?.name?.common || code;
+                const cont = allowed.has(it.region) ? it.region : undefined;
+                if (code && name && cont && !seen.has(code)) { merged.push({ code, name, continent: cont }); seen.add(code); }
+              }
+            }
+          } catch {}
+        }
+        try {
+          const sr = await fetch("/api/countries_supported.json");
+          if (sr.ok) {
+            const supp = await sr.json();
+            const supported = (supp?.codes ?? []).map(c=>String(c).toUpperCase());
+            if (supported.length >= 30) {
+              const ok = new Set(supported);
+              merged = merged.filter(c => ok.has(c.code));
+            }
+          }
+        } catch {}
+        if (!merged.length) {
+          merged = [
+            { code:"AR", name:"Argentina", continent:"Americas" },
+            { code:"BR", name:"Brasil", continent:"Americas" },
+            { code:"US", name:"Estados Unidos", continent:"Americas" },
+            { code:"ES", name:"España", continent:"Europe" },
+            { code:"FR", name:"Francia", continent:"Europe" },
+            { code:"DE", name:"Alemania", continent:"Europe" },
+          ];
+        }
+        merged.sort((a,b)=> a.name.localeCompare(b.name));
+        state.countries = merged;
+        state.continents = continents;
+
+        const def = "AR";
+        els.country.innerHTML = state.countries.map(c => `<option value="${c.code}" ${c.code===def?"selected":""}>${c.name}</option>`).join("");
+        els.titleCountry.textContent = codeToName(def);
+      }
+
+      function renderTable(items){
+        if(!items.length){
+          els.tbody.innerHTML = `<tr><td colspan="2" class="text-muted">No encontramos feriados para ese año 🤔</td></tr>`;
+          return;
+        }
+        els.tbody.innerHTML = items.map(h => {
+          const tag = h.isTourismExtra ? ' <span class="badge bg-warning-subtle text-warning-emphasis">🧳 turístico</span>' : '';
+          return `<tr><td>${fmtDate(h.dateISO)}</td><td>${h.name}${tag}</td></tr>`;
+        }).join("");
+      }
+
+      function computeNext(items){
+        const today = todayISO();
+        const up = items.find(h => h.dateISO >= today);
+        return up ? { holiday: up, daysLeft: Math.max(0, daysBetween(today, up.dateISO)) } : null;
+      }
+
+      // 🎉 Lógica de celebración
+      function shouldCelebrate(items) {
+        const t = todayISO();
+        return items.some(h => Math.abs(daysBetween(t, h.dateISO)) <= 2); // ventana ±2 días
+      }
+      function startCelebration(intense=false) {
+        stopCelebration(); // limpiar anterior
+        els.celebration.classList.add("show");
+        // Banner
+        const banner = document.createElement("div");
+        banner.className = "cele-banner";
+        banner.textContent = intense ? "🎉 ¡Feriado hoy! ¡A disfrutar!" : "🎉 Se viene feriado… ¡ya falta poco!";
+        els.celebration.appendChild(banner);
+
+        // Lluvia de emojis
+        const EMOJIS = ["🎉","🎊","✨","🥳","🎈"];
+        const total = intense ? 70 : 45;
+        for (let i=0;i<total;i++){
+          const s = document.createElement("span");
+          s.className = "cele-emoji";
+          s.textContent = EMOJIS[Math.floor(Math.random()*EMOJIS.length)];
+          s.style.left = Math.round(Math.random()*100) + "vw";
+          s.style.setProperty("--dur", (4 + Math.random()*5) + "s");
+          s.style.animationDelay = (Math.random()*1.5) + "s";
+          els.celebration.appendChild(s);
+          s.addEventListener("animationend", ()=> s.remove());
+        }
+
+        // Confetti (si está disponible)
+        const burst = () => {
+          if (typeof window.confetti === "function") {
+            window.confetti({
+              particleCount: intense ? 180 : 120,
+              spread: intense ? 95 : 70,
+              origin: { y: 0.6 }
+            });
+          }
+        };
+        burst();
+        state.celebrateTimer = setInterval(burst, 1400);
+        // Auto-stop
+        setTimeout(stopCelebration, intense ? 9000 : 7000);
+      }
+      function stopCelebration(){
+        if (state.celebrateTimer){ clearInterval(state.celebrateTimer); state.celebrateTimer=null; }
+        els.celebration.classList.remove("show");
+        els.celebration.innerHTML = "";
+      }
+
+      function getSelection() {
+        const code = (els.country && els.country.value) || state.selected.code || "AR";
+        const year = (els.year && els.year.value) || state.selected.year || "{DEFAULT_YEAR}";
+        return { code, year };
+      }
+
+      async function handleLoad(){
+        const { code, year } = getSelection();
+        state.selected = { code, year };
+        els.titleCountry.textContent = codeToName(code);
+        els.titleYear.textContent = year;
+
+        els.tbody.innerHTML = `<tr><td colspan="2" class="text-muted">Cargando… dame un segundo ⏳</td></tr>`;
+        const resp = await fetch(`/api/holidays.json?country=${code}&year=${year}&locale=${LOCALE}`);
+        const data = await resp.json();
+
+        if (data.mode !== "live") {
+          els.apiMode.textContent = "🔌 Fuente: Nager.Date (ups)";
+          if (data.error) els.apiMode.title = String(data.error);
+          els.tbody.innerHTML = `<tr><td colspan="2" class="text-danger">Uy… no pudimos traer los feriados ahora 😕. Probá más tarde.</td></tr>`;
+          els.totalHolidays.textContent = "0";
+          els.passedCount.textContent = "0";
+          els.remainingCount.textContent = "0";
+          els.nextName.textContent = "—"; els.nextDate.textContent = "—"; els.daysLeft.textContent = "—";
+          els.todayBadge && els.todayBadge.classList.add("d-none");
+          stopCelebration();
+          return;
+        }
+
+        els.apiMode.textContent = "🔌 Fuente: Nager.Date (en vivo)";
+        els.apiMode.removeAttribute("title");
+
+        const { holidays = [], total = 0 } = data;
+
+        const today = todayISO();
+        const passed = holidays.filter(h => h.dateISO < today).length;
+        els.totalHolidays.textContent = total;
+        els.passedCount.textContent = passed;
+        els.remainingCount.textContent = Math.max(0, total - passed);
+
+        const next = computeNext(holidays);
+        if(next){
+          els.nextName.textContent = next.holiday.name;
+          els.nextDate.textContent = fmtDate(next.holiday.dateISO);
+          els.daysLeft.textContent = String(next.daysLeft);
+          els.todayBadge && els.todayBadge.classList.toggle("d-none", next.daysLeft !== 0);
+        } else {
+          els.nextName.textContent = "—"; els.nextDate.textContent = "—"; els.daysLeft.textContent = "—";
+          els.todayBadge && els.todayBadge.classList.add("d-none");
+        }
+        renderTable(holidays);
+
+        // 🎉 activar celebración si estamos cerquita (±2 días). Si es hoy, más intensa.
+        const celebrate = shouldCelebrate(holidays);
+        const todayIsHoliday = holidays.some(h => h.dateISO === today);
+        if (celebrate) startCelebration(todayIsHoliday); else stopCelebration();
+
+        // Ranking por continente
+        const cont = getContinent(code);
+        els.selfCont.textContent = cont || "—";
+        if (cont) {
+          const selfCodes = getCountriesByContinent(cont);
+          const r1 = await fetch(`/api/ranking.json?countries=${encodeURIComponent(selfCodes.join(","))}&year=${year}&locale=${LOCALE}`);
+          const j1 = await r1.json();
+          renderRanking(els.rankSelfCont, j1.results, code);
+        } else {
+          els.rankSelfCont.innerHTML = `<li class="list-group-item text-muted">No tenemos continente mapeado para este país 🙈</li>`;
+        }
+
+        // Top 10 global + tu país
+        const worldCodes = getAllCodes();
+        const r2 = await fetch(`/api/ranking.json?countries=${encodeURIComponent(worldCodes.join(","))}&year=${year}&locale=${LOCALE}&limit=10&include=${code}`);
+        const j2 = await r2.json();
+        renderWorldRanking(els.rankWorld, j2.results, code, 10);
+      }
+
+      function renderRanking(listEl, items, highlight){
+        if(!items?.length){
+          listEl.innerHTML = `<li class="list-group-item text-muted">Sin datos por acá… 🤷‍♀️</li>`;
+          return;
+        }
+        const max = Math.max(1, ...items.map(i=>i.total));
+        listEl.innerHTML = items.map((i, idx) => {
+          const pct = Math.round((i.total/max)*100);
+          const name = codeToName(i.country);
+          const strong = i.country===highlight ? 'class="fw-bold text-primary"' : "";
+          return `
+            <li class="list-group-item">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span ${strong}>${idx+1}. ${name}</span>
+                <span class="badge bg-primary-subtle text-primary-emphasis">${i.total} 🎉</span>
+              </div>
+              <div class="progress"><div class="progress-bar" style="width:${pct}%"></div></div>
+            </li>`;
+        }).join("");
+      }
+
+      function renderWorldRanking(listEl, items, highlightCode, limit = 10){
+        if(!items?.length){
+          listEl.innerHTML = `<li class="list-group-item text-muted">Nada por aquí todavía 👀</li>`;
+          return;
+        }
+        let view = items.slice();
+        const max = Math.max(1, ...view.map(i=>i.total));
+        listEl.innerHTML = view.map((i, idx) => {
+          const pct = Math.round((i.total / max) * 100);
+          const name = codeToName(i.country);
+          const strongStart = i.country === highlightCode ? '<span class="fw-bold text-primary">' : '<span>';
+          return `
+            <li class="list-group-item">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                ${strongStart}${idx + 1}. ${name}</span>
+                <span class="badge bg-primary-subtle text-primary-emphasis">${i.total} 🎉</span>
+              </div>
+              <div class="progress"><div class="progress-bar" style="width:${pct}%"></div></div>
+            </li>
+          `;
+        }).join("");
+      }
+
+      // eventos
+      els.load.addEventListener("click", handleLoad);
+
+      // boot
+      await loadMeta();
+      await handleLoad();
+    </script>
+
+    <!-- 🎉 confetti (opcional, se usa si está) -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
