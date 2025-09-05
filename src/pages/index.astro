@@ -90,18 +90,42 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
     }
     @keyframes pop { from{ transform: translateX(-50%) scale(.9); opacity:0 } to{ transform: translateX(-50%) scale(1); opacity:1 } }
 
-    /* 🔄 Loader por sección (overlay) */
-    .section { position: relative; }
-    .section .section-loader {
-      position: absolute; inset: 0; z-index: 10;
-      display: none; /* se muestra con .loading */
-      align-items: center; justify-content: center; gap: 10px;
-      background: rgba(255,255,255,0.7);
-      backdrop-filter: blur(2px);
-      border-radius: inherit;
-    }
-    .section.loading .section-loader { display: flex; }
-    .section .spinner-border { width: 1.6rem; height: 1.6rem; }
+/* 🔄 Overlay de sección (lo tuyo) */
+.section { position: relative; }
+.section .section-loader {
+  position: absolute; inset: 0; z-index: 10;
+  display: none; /* se muestra con .loading */
+  align-items: center; justify-content: center; gap: 10px;
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(2px);
+  border-radius: inherit;
+  font-weight: 700;
+}
+.section.loading .section-loader { display: flex; }
+
+/* 🎉 Spinner divertido */
+.fun-loader {
+  width: 40px; height: 40px; position: relative; border-radius: 50%;
+}
+.fun-loader::before {
+  content: "";
+  position: absolute; inset: -6px; border-radius: 50%;
+  background: conic-gradient(#ff6b6b,#ffd166,#4ecdc4,#a78bfa,#ff6b6b);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 0);
+          mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 0);
+  animation: spin 1.1s linear infinite;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.15));
+}
+.fun-loader span {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 20px; transform-origin: center;
+  animation: pop 1.2s ease-in-out infinite;
+  text-shadow: 0 1px 0 #fff;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pop  { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+
   </style>
 </head>
 <body class="bg-light">
@@ -146,7 +170,7 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
           </div>
           <div id="todayBadge" class="badge bg-success-subtle text-success-emphasis mt-2 d-none">🎉 ¡Es hoy!</div>
           <div class="section-loader" aria-hidden="true">
-            <div class="spinner-border" role="status"></div><span>Cargando…</span>
+  <div class="fun-loader"><span>🎉</span></div><span>Estamos cargando la felicidad...</span>
           </div>
         </div>
       </div>
@@ -159,7 +183,7 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
             <div class="col-4"><div class="fw-bold fs-5" id="remainingCount">0</div><div class="text-muted">Faltan</div></div>
           </div>
           <div class="section-loader" aria-hidden="true">
-            <div class="spinner-border" role="status"></div><span>Cargando…</span>
+  <div class="fun-loader"><span>🎉</span></div><span>Estamos cargando la felicidad...</span>
           </div>
         </div>
       </div>
@@ -174,9 +198,9 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
           <tbody id="tbody"><tr><td colspan="2" class="text-muted">Tocá “Ver feriados” para empezar 👇</td></tr></tbody>
         </table>
       </div>
-      <div class="section-loader" aria-hidden="true">
-        <div class="spinner-border" role="status"></div><span>Cargando…</span>
-      </div>
+          <div class="section-loader" aria-hidden="true">
+  <div class="fun-loader"><span>🎉</span></div><span>Estamos cargando la felicidad...</span>
+          </div>
     </div>
 
     <!-- Rankings -->
@@ -186,7 +210,7 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
           <h2 class="h5 mb-3">🌎 Ranking por continente (<span id="selfCont">—</span>)</h2>
           <ol id="rankSelfCont" class="list-group list-unstyled"></ol>
           <div class="section-loader" aria-hidden="true">
-            <div class="spinner-border" role="status"></div><span>Cargando…</span>
+  <div class="fun-loader"><span>🎉</span></div><span>Estamos cargando la felicidad...</span>
           </div>
         </div>
       </div>
@@ -195,7 +219,7 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
           <h2 class="h5 mb-3">🌐 Top 10 del mundo (+ tu país)</h2>
           <ol id="rankWorld" class="list-group list-unstyled"></ol>
           <div class="section-loader" aria-hidden="true">
-            <div class="spinner-border" role="status"></div><span>Cargando…</span>
+  <div class="fun-loader"><span>🎉</span></div><span>Estamos cargando la felicidad...</span>
           </div>
         </div>
       </div>
