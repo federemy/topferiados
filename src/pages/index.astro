@@ -164,9 +164,12 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
         <div id="sec-next" class="card p-3 h-100 section">
           <h2 class="h5 mb-3">📅 Próximo feriado (¡a celebrar!)</h2>
           <div id="nextKpi" class="row text-center">
-            <div class="col-4"><div class="fw-bold fs-5" id="nextName">—</div><div class="text-muted">Nombre</div></div>
-            <div class="col-4"><div class="fw-bold fs-5" id="nextDate">—</div><div class="text-muted">Fecha</div></div>
-            <div class="col-4"><div class="fw-bold fs-5" id="daysLeft">—</div><div class="text-muted">Días</div></div>
+              <div class="col-12 col-md-4 mb-3 mb-md-0">
+<div class="fw-bold fs-5" id="nextName">—</div><div class="text-muted">Nombre</div></div>
+              <div class="col-12 col-md-4 mb-3 mb-md-0">
+<div class="fw-bold fs-5" id="nextDate">—</div><div class="text-muted">Fecha</div></div>
+              <div class="col-12 col-md-4 mb-3 mb-md-0">
+<div class="fw-bold fs-5" id="daysLeft">—</div><div class="text-muted">Días</div></div>
           </div>
           <div id="todayBadge" class="badge bg-success-subtle text-success-emphasis mt-2 d-none">🎉 ¡Es hoy!</div>
           <div class="section-loader" aria-hidden="true">
@@ -176,7 +179,7 @@ const OG_IMAGE = "/og/feriados-og.png"; // poné tu imagen en public/og/feriados
       </div>
       <div class="col-lg-6">
         <div id="sec-summary" class="card p-3 h-100 section">
-          <h2 class="h5 mb-3">📊 Resumen — <span id="titleCountry">—</span> <span id="titleYear">{DEFAULT_YEAR}</span></h2>
+          <h2 class="h5 mb-3">📊 Resumen <span id="titleCountry">—</span> <span id="titleYear">{DEFAULT_YEAR}</span></h2>
           <div id="summaryKpi" class="row text-center">
             <div class="col-4"><div class="fw-bold fs-5" id="totalHolidays">0</div><div class="text-muted">Feriados</div></div>
             <div class="col-4"><div class="fw-bold fs-5" id="passedCount">0</div><div class="text-muted">Pasaron</div></div>
